@@ -151,7 +151,11 @@ lazy val cli = project
       moduleName := "scalafmt-cli",
       mainClass in assembly := Some("org.scalafmt.cli.Cli"),
       libraryDependencies ++= Seq(
-        "com.github.scopt" %% "scopt" % "3.3.0"
+        "com.github.scopt" %% "scopt" % "3.3.0",
+        "org.yaml" % "snakeyaml" % "1.17",
+          "io.circe" %% "circe-core" % "0.4.1",
+          "io.circe" %% "circe-generic" % "0.4.1",
+          "io.circe" %% "circe-parser" % "0.4.1"
       )
     ).dependsOn(core % "compile->compile;test->test")
     .dependsOn(macros)
