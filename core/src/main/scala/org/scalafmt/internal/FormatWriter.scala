@@ -134,11 +134,16 @@ class FormatWriter(formatOps: FormatOps) {
     require(toks.length >= splits.length, "splits !=")
     val locations = getFormatLocations(toks, splits, style, debug)
     val tokenAligns = alignmentTokens(locations, style).withDefaultValue(0)
+    var lastModification = locations.head.split.modification
     locations.zipWithIndex.foreach {
       case (FormatLocation(tok, split, state), i) =>
         val previous = locations(Math.max(0, i - 1))
         val whitespace = split.modification match {
-          case Space => " " * (1 + tokenAligns(tok))
+          case Space =>
+            val previousAlign =
+              if (lastModification == NoSplit) tokenAligns(prev(tok))
+              else 0
+            " " + (" " * (tokenAligns(tok) + previousAlign))
           case nl: NewlineT
               if nl.acceptNoSplit && !tok.left.isInstanceOf[Comment] &&
                 state.indentation >= previous.state.column =>
@@ -156,8 +161,9 @@ class FormatWriter(formatOps: FormatOps) {
               else " " * state.indentation
             newline + indentation
           case Provided(literal) => literal
-          case NoSplit => ""
+          case NoSplit => "" // + (" " * tokenAligns(tok))
         }
+        lastModification = split.modification
         callback.apply(state, tok, whitespace)
     }
     locations.lastOption.foreach { location =>
@@ -167,7 +173,8 @@ class FormatWriter(formatOps: FormatOps) {
 
   private def isCandidate(location: FormatLocation,
                           style: ScalafmtStyle): Boolean = {
-    location.split.modification == Space && {
+//    location.split.modification == Space &&
+        {
       val token = location.formatToken.right
       val code = token match {
         case c: Comment if isInlineComment(c) => "//"
