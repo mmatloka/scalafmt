@@ -39,4 +39,12 @@ TaskKey[Unit]("check") := {
       |)
     """.stripMargin
   )
+  assertContentsEqual(
+    new File("target/scala-2.11/src_managed/idl/Hoge.scala"),
+    """
+      |object    A {
+      |println(1)
+      |}
+    """.stripMargin
+  )
 }
