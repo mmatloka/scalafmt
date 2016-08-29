@@ -28,9 +28,14 @@ object Scalafmt {
              runner: ScalafmtRunner = ScalafmtRunner.default,
              range: Set[Range] = Set.empty[Range]): FormatResult = {
     try {
-      if (code.matches("\\s*")) FormatResult.Success("\n")
+      if (code.matches("\\s*")) FormatResult.Success(System.lineSeparator())
       else {
-        val tree = new scala.meta.XtensionParseInputLike(code)
+        val unixCode = if(isWindows) {
+          code.replaceAll("\r\n", "\n")
+        } else {
+          code
+        }
+        val tree = new scala.meta.XtensionParseInputLike(unixCode)
           .parse(stringToInput, runner.parser, runner.dialect)
           .get
         val formatOps = new FormatOps(tree, style, runner)
@@ -39,10 +44,15 @@ object Scalafmt {
         val search = new BestFirstSearch(formatOps, range, formatWriter)
         val partial = search.getBestPath
         val formattedString = formatWriter.mkString(partial.splits)
-        if (partial.reachedEOF) {
-          FormatResult.Success(formattedString)
+        val correctedFormattedString = if(isWindows) {
+          formattedString.replaceAll("\n", "\r\n")
         } else {
-          throw Incomplete(formattedString)
+          formattedString
+        }
+        if (partial.reachedEOF) {
+          FormatResult.Success(correctedFormattedString)
+        } else {
+          throw Incomplete(correctedFormattedString)
         }
       }
     } catch {
@@ -50,4 +60,6 @@ object Scalafmt {
       case NonFatal(e) => FormatResult.Failure(e)
     }
   }
+
+  private[this] def isWindows : Boolean = System.lineSeparator() == "\r\n"
 }
